@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use fnv::FnvHashMap;
 use lua_handle::LuaHandle;
 use mlua::{Lua, Value as LuaValue};
 use nu_plugin::{serve_plugin, MsgPackSerializer};
@@ -16,14 +17,13 @@ fn main() {
 }
 
 struct Plugin {
-    // TODO: use fnv
-    states: RwLock<HashMap<Uuid, Arc<Mutex<Lua>>>>,
+    states: RwLock<FnvHashMap<Uuid, Arc<Mutex<Lua>>>>,
 }
 
 impl Plugin {
     fn new() -> Self {
         Self {
-            states: RwLock::new(HashMap::new()),
+            states: RwLock::new(FnvHashMap::default()),
         }
     }
 
