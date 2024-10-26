@@ -1,7 +1,7 @@
 use nu_plugin::SimplePluginCommand;
 use nu_protocol::{LabeledError, ShellError, Signature, Span, SyntaxShape, Value as NuValue};
 
-use crate::lua_handle::{self, LuaHandle};
+use crate::lua_handle::LuaHandle;
 use crate::Plugin;
 
 pub(crate) struct LuaNew;
@@ -25,8 +25,8 @@ impl SimplePluginCommand for LuaNew {
         &self,
         plugin: &Self::Plugin,
         engine: &nu_plugin::EngineInterface,
-        call: &nu_plugin::EvaluatedCall,
-        input: &NuValue,
+        _call: &nu_plugin::EvaluatedCall,
+        _input: &NuValue,
     ) -> Result<NuValue, LabeledError> {
         engine.set_gc_disabled(true)?;
 
@@ -61,9 +61,9 @@ impl SimplePluginCommand for LuaEval {
     fn run(
         &self,
         plugin: &Self::Plugin,
-        engine: &nu_plugin::EngineInterface,
+        _engine: &nu_plugin::EngineInterface,
         call: &nu_plugin::EvaluatedCall,
-        input: &NuValue,
+        _input: &NuValue,
     ) -> Result<NuValue, LabeledError> {
         let span = Span::unknown();
         let lua_handle = call.nth(0).unwrap();

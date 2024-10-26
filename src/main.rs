@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::sync::Arc;
 
 use fnv::FnvHashMap;
@@ -65,7 +64,7 @@ impl Plugin {
 impl nu_plugin::Plugin for Plugin {
     fn custom_value_dropped(
         &self,
-        engine: &nu_plugin::EngineInterface,
+        _engine: &nu_plugin::EngineInterface,
         custom_value: Box<dyn nu_protocol::CustomValue>,
     ) -> Result<(), nu_protocol::LabeledError> {
         if let Some(lua_handle) = custom_value.as_any().downcast_ref::<LuaHandle>() {
