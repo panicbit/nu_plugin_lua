@@ -15,7 +15,7 @@ fn main() {
     serve_plugin(&Plugin::new(), MsgPackSerializer);
 }
 
-struct Plugin {
+pub struct Plugin {
     states: RwLock<FnvHashMap<Uuid, Arc<Mutex<Lua>>>>,
 }
 
@@ -79,7 +79,7 @@ impl nu_plugin::Plugin for Plugin {
     }
 
     fn commands(&self) -> Vec<Box<dyn nu_plugin::PluginCommand<Plugin = Self>>> {
-        vec![Box::new(command::LuaNew), Box::new(command::LuaEval)]
+        vec![Box::new(command::New), Box::new(command::Eval)]
     }
 }
 

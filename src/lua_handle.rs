@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub(crate) struct LuaHandle(Uuid);
+pub struct LuaHandle(Uuid);
 
 impl LuaHandle {
     pub fn new(uuid: Uuid) -> Self {
