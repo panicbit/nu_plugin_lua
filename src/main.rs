@@ -80,10 +80,7 @@ impl nu_plugin::Plugin for Plugin {
     }
 
     fn commands(&self) -> Vec<Box<dyn nu_plugin::PluginCommand<Plugin = Self>>> {
-        vec![
-            Box::new(command::LuaNew),
-            Box::new(command::LuaEval),
-        ]
+        vec![Box::new(command::LuaNew), Box::new(command::LuaEval)]
     }
 }
 
@@ -95,11 +92,10 @@ fn lua_to_nushell(value: LuaValue) -> Result<NuValue, ShellError> {
         LuaValue::Boolean(v) => NuValue::bool(v, span),
         LuaValue::Integer(v) => NuValue::int(v, span),
         LuaValue::Number(v) => NuValue::float(v, span),
-        LuaValue::String(v) => {
-            v.to_str()
+        LuaValue::String(v) => v
+            .to_str()
             .map(|v| NuValue::string(v.to_string(), span))
-            .unwrap_or_else(|_| NuValue::binary(v.as_bytes().to_vec(), span))
-        },
+            .unwrap_or_else(|_| NuValue::binary(v.as_bytes().to_vec(), span)),
         LuaValue::Table(table) => {
             let mut records = Vec::new();
 
@@ -117,13 +113,13 @@ fn lua_to_nushell(value: LuaValue) -> Result<NuValue, ShellError> {
             }
 
             NuValue::list(records, span)
-        },
+        }
         LuaValue::Function(function) => {
             let function = function.to_pointer();
             let function = format!("function: {function:p}");
 
             NuValue::string(function, span)
-        },
+        }
         LuaValue::Thread(thread) => todo!(),
         LuaValue::LightUserData(light_user_data) => todo!(),
         LuaValue::UserData(any_user_data) => todo!(),
