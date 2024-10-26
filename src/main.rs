@@ -30,14 +30,14 @@ impl Plugin {
     fn create_lua(&self) -> LuaHandle {
         let uuid = Uuid::new_v4();
         let lua = Arc::new(Mutex::new(Lua::new()));
-        
+
         self.states.write().insert(uuid, lua);
 
         LuaHandle::new(uuid)
     }
 
     fn destroy_lua(&self, lua_handle: &LuaHandle) {
-        dbg!(self.states.write().remove(&lua_handle.uuid()));
+        self.states.write().remove(&lua_handle.uuid());
     }
 
     fn get_lua(&self, lua_handle: &LuaHandle) -> Option<Arc<Mutex<Lua>>> {
