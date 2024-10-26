@@ -1,7 +1,8 @@
 use nu_plugin::SimplePluginCommand;
-use nu_protocol::{LabeledError, ShellError, Signature, SyntaxShape, Value as NuValue};
+use nu_protocol::{LabeledError, Signature, SyntaxShape};
 
-use crate::lua_handle::LuaHandle;
+use crate::extensions::EvaluatedCallExt;
+use crate::{custom, NuValue};
 
 pub struct Eval;
 
@@ -30,19 +31,9 @@ impl SimplePluginCommand for Eval {
         call: &nu_plugin::EvaluatedCall,
         _input: &NuValue,
     ) -> Result<NuValue, LabeledError> {
-        let lua_handle = call.nth(0).expect("BUG: arg 0 missing");
-        let lua_handle = lua_handle
-            .as_custom_value()?
-            .as_any()
-            .downcast_ref::<LuaHandle>()
-            .ok_or_else(|| ShellError::TypeMismatch {
-                err_message: "expected lua state".into(),
-                span: lua_handle.span(),
-            })?;
-        let lua_code = call.nth(1).expect("BUG: arg 1 missing");
-        let lua_code = lua_code.as_str()?;
-
-        let value = plugin.eval_lua(lua_handle, lua_code)?;
+        let lua = call.arg::<custom::Lua>(0)?;
+        let code = call.arg::<str>(1)?;
+        let value = plugin.eval_lua(lua, code)?;
 
         Ok(value)
     }

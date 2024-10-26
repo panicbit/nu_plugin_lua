@@ -1,5 +1,8 @@
 use nu_plugin::SimplePluginCommand;
-use nu_protocol::{LabeledError, Signature, Span, Value as NuValue};
+use nu_protocol::{LabeledError, Signature, Span};
+
+use crate::custom::PluginValue;
+use crate::NuValue;
 
 pub struct New;
 
@@ -28,8 +31,9 @@ impl SimplePluginCommand for New {
         engine.set_gc_disabled(true)?;
 
         let span = Span::unknown();
-        let lua_handle = plugin.create_lua();
-        let value = NuValue::custom(Box::new(lua_handle), span);
+        let (lua, _) = plugin.create_lua();
+        let plugin_value = PluginValue::Lua(lua);
+        let value = NuValue::custom(Box::new(plugin_value), span);
 
         Ok(value)
     }

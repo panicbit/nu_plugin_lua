@@ -1,15 +1,20 @@
 use std::sync::Arc;
 
 use fnv::FnvHashMap;
-use lua_handle::LuaHandle;
-use mlua::{Lua, Value as LuaValue};
+use mlua::Lua;
 use nu_plugin::{serve_plugin, MsgPackSerializer};
-use nu_protocol::{LabeledError, Record, ShellError, Span, Value as NuValue};
+use nu_protocol::{LabeledError, Record, ShellError, Span};
 use parking_lot::{Mutex, RwLock};
 use uuid::Uuid;
 
 mod command;
-mod lua_handle;
+mod custom;
+mod extensions;
+mod utils;
+
+type SharedLua = Arc<Mutex<Lua>>;
+type NuValue = nu_protocol::Value;
+type LuaValue<'lua> = mlua::Value<'lua>;
 
 fn main() {
     serve_plugin(&Plugin::new(), MsgPackSerializer);
@@ -26,28 +31,29 @@ impl Plugin {
         }
     }
 
-    fn create_lua(&self) -> LuaHandle {
+    fn create_lua(&self) -> (custom::Lua, SharedLua) {
         let uuid = Uuid::new_v4();
         let lua = Arc::new(Mutex::new(Lua::new()));
+        let custom = custom::Lua::new(uuid);
 
-        self.states.write().insert(uuid, lua);
+        self.states.write().insert(uuid, lua.clone());
 
-        LuaHandle::new(uuid)
+        (custom, lua)
     }
 
-    fn destroy_lua(&self, lua_handle: &LuaHandle) {
-        self.states.write().remove(&lua_handle.uuid());
+    fn destroy_lua(&self, lua: &custom::Lua) {
+        self.states.write().remove(&lua.uuid());
     }
 
-    fn get_lua(&self, lua_handle: &LuaHandle) -> Option<Arc<Mutex<Lua>>> {
+    fn get_lua(&self, lua: &custom::Lua) -> Option<Arc<Mutex<Lua>>> {
         let states = self.states.read();
-        let lua = states.get(&lua_handle.uuid())?;
+        let lua = states.get(&lua.uuid())?;
 
         Some(Arc::clone(lua))
     }
 
-    fn eval_lua(&self, lua_handle: &LuaHandle, lua_code: &str) -> Result<NuValue, ShellError> {
-        let Some(lua) = self.get_lua(lua_handle) else {
+    fn eval_lua(&self, lua: &custom::Lua, lua_code: &str) -> Result<NuValue, ShellError> {
+        let Some(lua) = self.get_lua(lua) else {
             return Err(LabeledError::new("lua handle is invalid").into());
         };
 
@@ -67,8 +73,10 @@ impl nu_plugin::Plugin for Plugin {
         _engine: &nu_plugin::EngineInterface,
         custom_value: Box<dyn nu_protocol::CustomValue>,
     ) -> Result<(), nu_protocol::LabeledError> {
-        if let Some(lua_handle) = custom_value.as_any().downcast_ref::<LuaHandle>() {
-            self.destroy_lua(lua_handle);
+        if let Some(value) = custom_value.as_any().downcast_ref::<custom::PluginValue>() {
+            match value {
+                custom::PluginValue::Lua(lua) => self.destroy_lua(lua),
+            }
         }
 
         Ok(())
