@@ -65,8 +65,7 @@ impl SimplePluginCommand for LuaEval {
         call: &nu_plugin::EvaluatedCall,
         _input: &NuValue,
     ) -> Result<NuValue, LabeledError> {
-        let span = Span::unknown();
-        let lua_handle = call.nth(0).unwrap();
+        let lua_handle = call.nth(0).expect("BUG: arg 0 missing");
         let lua_handle = lua_handle
             .as_custom_value()?
             .as_any()
@@ -75,7 +74,7 @@ impl SimplePluginCommand for LuaEval {
                 err_message: "expected lua state".into(),
                 span: lua_handle.span(),
             })?;
-        let lua_code = call.nth(1).unwrap();
+        let lua_code = call.nth(1).expect("BUG: arg 1 missing");
         let lua_code = lua_code.as_str()?;
 
         let value = plugin.eval_lua(lua_handle, lua_code)?;
