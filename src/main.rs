@@ -47,14 +47,17 @@ impl Plugin {
         Some(Arc::clone(lua))
     }
 
-    fn eval_lua(&self, lua_handle: &LuaHandle, lua_code: &str) -> Result<NuValue, ShellError>{
+    fn eval_lua(&self, lua_handle: &LuaHandle, lua_code: &str) -> Result<NuValue, ShellError> {
         let Some(lua) = self.get_lua(lua_handle) else {
             return Err(LabeledError::new("lua handle is invalid").into());
         };
 
         let lua = lua.lock();
-        let value = lua.load(lua_code).eval::<LuaValue>().unwrap();
-        
+        let value = lua
+            .load(lua_code)
+            .eval::<LuaValue>()
+            .map_err(|err| LabeledError::new(err.to_string()))?;
+
         lua_to_nushell(value)
     }
 }
