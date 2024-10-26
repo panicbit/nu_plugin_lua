@@ -119,9 +119,29 @@ fn lua_to_nushell(value: LuaValue) -> Result<NuValue, ShellError> {
 
             NuValue::string(function, span)
         }
-        LuaValue::Thread(thread) => todo!(),
-        LuaValue::LightUserData(light_user_data) => todo!(),
-        LuaValue::UserData(any_user_data) => todo!(),
-        LuaValue::Error(error) => todo!(),
+        LuaValue::Thread(thread) => {
+            let thread = thread.to_pointer();
+            let thread = format!("thread: {thread:p}");
+
+            NuValue::string(thread, span)
+        }
+        LuaValue::LightUserData(light_user_data) => {
+            let light_user_data = light_user_data.0;
+            let light_user_data = format!("light_user_data: {light_user_data:p}");
+
+            NuValue::string(light_user_data, span)
+        }
+        LuaValue::UserData(user_data) => {
+            let user_data = user_data.to_pointer();
+            let user_data = format!("user_data: {user_data:p}");
+
+            NuValue::string(user_data, span)
+        }
+        LuaValue::Error(_error) => {
+            return Err(LabeledError::new(
+                "converting mlua internal errors to nushell is not supported",
+            )
+            .into());
+        }
     })
 }
