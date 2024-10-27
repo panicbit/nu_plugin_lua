@@ -87,7 +87,7 @@ impl nu_plugin::Plugin for Plugin {
     }
 
     fn commands(&self) -> Vec<Box<dyn nu_plugin::PluginCommand<Plugin = Self>>> {
-        vec![Box::new(command::New), Box::new(command::Eval)]
+        vec![command::new(), command::eval()]
     }
 }
 

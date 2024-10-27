@@ -1,4 +1,4 @@
-use nu_protocol::{ShellError, Span};
+use nu_protocol::{ShellError, Span, SyntaxShape};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -24,10 +24,14 @@ impl Lua {
     }
 }
 
-impl FromArg for Lua {
+impl FromArg for &'_ Lua {
     type Output<'a> = &'a Lua;
 
     fn from_arg(value: &NuValue) -> Result<Self::Output<'_>, ShellError> {
         value.as_lua()
+    }
+
+    fn syntax_shape() -> SyntaxShape {
+        SyntaxShape::Any
     }
 }

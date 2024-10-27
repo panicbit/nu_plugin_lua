@@ -1,6 +1,6 @@
 use extension_traits::extension;
 use nu_plugin::EvaluatedCall;
-use nu_protocol::{ShellError, Span};
+use nu_protocol::{ShellError, Span, SyntaxShape};
 
 use crate::custom::{self, PluginValue};
 use crate::utils::{simple_error, type_error};
@@ -49,8 +49,14 @@ impl<T> Option<T> {
 #[extension(pub trait EvaluatedCallExt)]
 impl EvaluatedCall {
     fn arg<T: FromArg + ?Sized>(&self, index: usize) -> Result<T::Output<'_>, ShellError> {
+        self.positional.arg::<T>(index)
+    }
+}
+
+#[extension(pub trait ArgSliceExt)]
+impl [NuValue] {
+    fn arg<T: FromArg + ?Sized>(&self, index: usize) -> Result<T::Output<'_>, ShellError> {
         let value = self
-            .positional
             .get(index)
             .ok_or_else_bug(|| format!("expected arg {index}"))?;
 
@@ -62,12 +68,17 @@ pub trait FromArg {
     type Output<'a>;
 
     fn from_arg(value: &NuValue) -> Result<Self::Output<'_>, ShellError>;
+    fn syntax_shape() -> SyntaxShape;
 }
 
-impl FromArg for str {
+impl FromArg for &'_ str {
     type Output<'a> = &'a str;
 
     fn from_arg(value: &NuValue) -> Result<Self::Output<'_>, ShellError> {
         value.as_str()
+    }
+
+    fn syntax_shape() -> SyntaxShape {
+        SyntaxShape::String
     }
 }

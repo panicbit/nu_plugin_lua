@@ -1,5 +1,5 @@
 mod new;
-pub use new::New;
+pub use new::new;
 
 mod eval;
-pub use eval::Eval;
+pub use eval::eval;
