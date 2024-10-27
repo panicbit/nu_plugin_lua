@@ -48,33 +48,33 @@ impl<T> Option<T> {
 
 #[extension(pub trait EvaluatedCallExt)]
 impl EvaluatedCall {
-    fn arg<T: FromArg + ?Sized>(&self, index: usize) -> Result<T::Output<'_>, ShellError> {
+    fn arg<T: FromValue>(&self, index: usize) -> Result<T::Output<'_>, ShellError> {
         self.positional.arg::<T>(index)
     }
 }
 
 #[extension(pub trait ArgSliceExt)]
 impl [NuValue] {
-    fn arg<T: FromArg + ?Sized>(&self, index: usize) -> Result<T::Output<'_>, ShellError> {
+    fn arg<T: FromValue>(&self, index: usize) -> Result<T::Output<'_>, ShellError> {
         let value = self
             .get(index)
             .ok_or_else_bug(|| format!("expected arg {index}"))?;
 
-        T::from_arg(value)
+        T::from_value(value)
     }
 }
 
-pub trait FromArg {
+pub trait FromValue: Sized {
     type Output<'a>;
 
-    fn from_arg(value: &NuValue) -> Result<Self::Output<'_>, ShellError>;
+    fn from_value(value: &NuValue) -> Result<Self::Output<'_>, ShellError>;
     fn syntax_shape() -> SyntaxShape;
 }
 
-impl FromArg for &'_ str {
+impl FromValue for &'_ str {
     type Output<'a> = &'a str;
 
-    fn from_arg(value: &NuValue) -> Result<Self::Output<'_>, ShellError> {
+    fn from_value(value: &NuValue) -> Result<Self::Output<'_>, ShellError> {
         value.as_str()
     }
 

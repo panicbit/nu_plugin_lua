@@ -2,12 +2,14 @@ use nu_plugin::{PluginCommand, SimplePluginCommand};
 use nu_protocol::{LabeledError, Signature, Span};
 
 use crate::custom::PluginValue;
-use crate::utils::CommandBuilder;
+use crate::utils::Command;
 use crate::NuValue;
 
 pub fn new() -> Box<dyn PluginCommand<Plugin = crate::Plugin>> {
-    CommandBuilder::new("lua new", "create a new lua instance")
-        .run(|plugin, engine, ()| {
+    Command::new::<_, ()>(
+        "lua new",
+        "create a new lua instance",
+        |plugin, engine, ()| {
             engine.set_gc_disabled(true)?;
 
             let span = Span::unknown();
@@ -16,8 +18,9 @@ pub fn new() -> Box<dyn PluginCommand<Plugin = crate::Plugin>> {
             let value = NuValue::custom(Box::new(plugin_value), span);
 
             Ok(value)
-        })
-        .boxed()
+        },
+    )
+    .into()
 }
 
 pub struct New;

@@ -2,7 +2,7 @@ use nu_protocol::{ShellError, Span, SyntaxShape};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::extensions::{FromArg, NuValueExt};
+use crate::extensions::{FromValue, NuValueExt};
 use crate::NuValue;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -24,10 +24,10 @@ impl Lua {
     }
 }
 
-impl FromArg for &'_ Lua {
+impl FromValue for &Lua {
     type Output<'a> = &'a Lua;
 
-    fn from_arg(value: &NuValue) -> Result<Self::Output<'_>, ShellError> {
+    fn from_value(value: &NuValue) -> Result<Self::Output<'_>, ShellError> {
         value.as_lua()
     }
 

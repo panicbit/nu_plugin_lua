@@ -1,8 +1,6 @@
-use nu_plugin::{EngineInterface, EvaluatedCall, SimplePluginCommand};
+use nu_plugin::{EngineInterface, EvaluatedCall, PluginCommand, SimplePluginCommand};
 use nu_protocol::{LabeledError, ShellError, Signature, Span, SyntaxShape};
-use std::marker::PhantomData;
 
-use crate::extensions::{ArgSliceExt, FromArg};
 use crate::NuValue;
 
 pub fn type_error(type_name: impl AsRef<str>, span: Span) -> ShellError {
@@ -18,145 +16,81 @@ pub fn simple_error(msg: impl Into<String>) -> ShellError {
     LabeledError::new(msg).into()
 }
 
-struct ArgSignature {
-    name: &'static str,
-    syntax_shape: SyntaxShape,
-    description: &'static str,
+pub struct ArgSignature {
+    pub name: &'static str,
+    pub description: &'static str,
+    pub syntax_shape: SyntaxShape,
 }
 
-pub struct CommandBuilder<Args> {
-    name: &'static str,
-    description: &'static str,
-    arg_signatures: Vec<ArgSignature>,
-    _p: PhantomData<Args>,
-}
-
-impl CommandBuilder<()> {
-    pub fn new(name: &'static str, description: &'static str) -> Self {
+impl ArgSignature {
+    pub fn new(name: &'static str, description: &'static str, syntax_shape: SyntaxShape) -> Self {
         Self {
             name,
             description,
-            arg_signatures: Vec::new(),
-            _p: PhantomData,
+            syntax_shape,
         }
     }
 }
 
-impl<ARGS> CommandBuilder<ARGS> {
-    pub fn arg<T: FromArg>(
-        mut self,
-        name: &'static str,
-        description: &'static str,
-    ) -> CommandBuilder<<ARGS as Append<T>>::Output>
-    where
-        ARGS: Append<T>,
-    {
-        self.arg_signatures.push(ArgSignature {
-            name,
-            syntax_shape: T::syntax_shape(),
-            description,
-        });
+pub trait FromValues {
+    type Output<'a>;
 
-        CommandBuilder {
-            name,
-            description,
-            arg_signatures: self.arg_signatures,
-            _p: PhantomData,
-        }
-    }
-
-    pub fn run<F>(self, f: F) -> Command<ARGS, F>
-    where
-        ARGS: Args,
-        F: Fn(&crate::Plugin, &EngineInterface, ARGS::Parsed<'_>) -> Result<NuValue, ShellError>
-            + Send
-            + Sync,
-        F: Send + Sync,
-    {
-        Command {
-            name: self.name,
-            description: self.description,
-            arg_signatures: self.arg_signatures,
-            run_fn: f,
-            _p: PhantomData,
-        }
-    }
+    fn from_values(positional: &[NuValue]) -> Result<Self::Output<'_>, ShellError>;
+    fn arg_signatures() -> Vec<ArgSignature>;
 }
 
-pub trait Args {
-    type Parsed<'a>;
+impl FromValues for () {
+    type Output<'a> = ();
 
-    fn from_values(values: &[NuValue]) -> Result<Self::Parsed<'_>, ShellError>;
-}
-
-impl Args for () {
-    type Parsed<'a> = ();
-
-    fn from_values(_values: &[NuValue]) -> Result<Self::Parsed<'_>, ShellError> {
+    fn from_values(_positional: &[NuValue]) -> Result<Self::Output<'_>, ShellError> {
         Ok(())
     }
-}
 
-impl<A0> Args for (A0,)
-where
-    A0: FromArg,
-{
-    type Parsed<'a> = (A0::Output<'a>,);
-
-    fn from_values(values: &[NuValue]) -> Result<Self::Parsed<'_>, ShellError> {
-        Ok((values.arg::<A0>(0)?,))
+    fn arg_signatures() -> Vec<ArgSignature> {
+        vec![]
     }
 }
 
-impl<A0, A1> Args for (A0, A1)
-where
-    A0: FromArg,
-    A1: FromArg,
-{
-    type Parsed<'a> = (A0::Output<'a>, A1::Output<'a>);
+type RunFn = Box<
+    dyn Fn(&crate::Plugin, &EngineInterface, &EvaluatedCall) -> Result<NuValue, ShellError>
+        + Send
+        + Sync,
+>;
 
-    fn from_values(values: &[NuValue]) -> Result<Self::Parsed<'_>, ShellError> {
-        Ok((values.arg::<A0>(0)?, values.arg::<A1>(1)?))
-    }
-}
-
-pub trait Append<T> {
-    type Output;
-}
-
-impl<T> Append<T> for () {
-    type Output = (T,);
-}
-
-impl<C0, T> Append<T> for (C0,) {
-    type Output = (C0, T);
-}
-
-pub struct Command<ARGS, F> {
+pub struct Command {
     name: &'static str,
     description: &'static str,
     arg_signatures: Vec<ArgSignature>,
-    run_fn: F,
-    _p: PhantomData<ARGS>,
+    run_fn: RunFn,
+    // https://doc.rust-lang.org/nomicon/phantom-data.html#table-of-phantomdata-patterns
 }
 
-impl<ARGS, F> Command<ARGS, F>
-where
-    ARGS: Args + Send + Sync + 'static,
-    F: Fn(&crate::Plugin, &EngineInterface, ARGS::Parsed<'_>) -> Result<NuValue, ShellError>,
-    F: Send + Sync + 'static,
-{
-    pub fn boxed(self) -> Box<dyn nu_plugin::PluginCommand<Plugin = crate::Plugin>> {
-        Box::new(self)
+impl Command {
+    pub fn new<F, Args>(name: &'static str, description: &'static str, run_fn: F) -> Self
+    where
+        F: Fn(&crate::Plugin, &EngineInterface, Args::Output<'_>) -> Result<NuValue, ShellError>,
+        F: Send + Sync + 'static,
+        Args: FromValues,
+    {
+        Self {
+            name,
+            description,
+            arg_signatures: Args::arg_signatures(),
+            run_fn: Box::new(move |plugin, engine, call| {
+                let args = Args::from_values(&call.positional)?;
+                run_fn(plugin, engine, args)
+            }),
+        }
     }
 }
 
-impl<ARGS, F> SimplePluginCommand for Command<ARGS, F>
-where
-    ARGS: Args + Send + Sync,
-    F: Fn(&crate::Plugin, &EngineInterface, ARGS::Parsed<'_>) -> Result<NuValue, ShellError>,
-    F: Send + Sync,
-{
+impl From<Command> for Box<dyn PluginCommand<Plugin = crate::Plugin>> {
+    fn from(command: Command) -> Self {
+        Box::new(command)
+    }
+}
+
+impl SimplePluginCommand for Command {
     type Plugin = crate::Plugin;
 
     fn name(&self) -> &str {
@@ -184,8 +118,7 @@ where
         call: &EvaluatedCall,
         _input: &NuValue,
     ) -> Result<NuValue, LabeledError> {
-        let args = ARGS::from_values(&call.positional)?;
-        let value = (self.run_fn)(plugin, engine, args)?;
+        let value = (self.run_fn)(plugin, engine, call)?;
 
         Ok(value)
     }
