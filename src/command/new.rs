@@ -6,7 +6,7 @@ use crate::utils::Command;
 use crate::NuValue;
 
 pub fn new() -> Box<dyn PluginCommand<Plugin = crate::Plugin>> {
-    Command::new::<_, ()>(
+    Command::new::<()>(
         "lua new",
         "create a new lua instance",
         |plugin, engine, ()| {

@@ -66,20 +66,25 @@ pub struct Command {
 }
 
 impl Command {
-    pub fn new<F, Args>(name: &'static str, description: &'static str, run_fn: F) -> Self
+    pub fn new<Args>(
+        name: &'static str,
+        description: &'static str,
+        run_fn: impl Fn(&crate::Plugin, &EngineInterface, Args::Output<'_>) -> Result<NuValue, ShellError>
+            + Send
+            + Sync
+            + 'static,
+    ) -> Self
     where
-        F: Fn(&crate::Plugin, &EngineInterface, Args::Output<'_>) -> Result<NuValue, ShellError>,
-        F: Send + Sync + 'static,
         Args: FromValues,
     {
         Self {
             name,
             description,
-            arg_signatures: Args::arg_signatures(),
             run_fn: Box::new(move |plugin, engine, call| {
                 let args = Args::from_values(&call.positional)?;
                 run_fn(plugin, engine, args)
             }),
+            arg_signatures: Args::arg_signatures(),
         }
     }
 }

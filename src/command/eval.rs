@@ -39,7 +39,7 @@ impl FromValues for Args<'_> {
 }
 
 pub fn eval() -> Box<dyn PluginCommand<Plugin = crate::Plugin>> {
-    Command::new::<_, Args>(
+    Command::new::<Args>(
         "lua eval",
         "evaluate lua to a nushell value",
         |plugin, _engine, Args { lua, code }| plugin.eval_lua(lua, code),
