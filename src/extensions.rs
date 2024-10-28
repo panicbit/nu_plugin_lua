@@ -1,6 +1,7 @@
 use extension_traits::extension;
 use nu_plugin::EvaluatedCall;
-use nu_protocol::{ShellError, Span, SyntaxShape};
+use nu_plugin_helpers::FromValue;
+use nu_protocol::{ShellError, Span};
 
 use crate::custom::{self, PluginValue};
 use crate::utils::{simple_error, type_error};
@@ -61,24 +62,5 @@ impl [NuValue] {
             .ok_or_else_bug(|| format!("expected arg {index}"))?;
 
         T::from_value(value)
-    }
-}
-
-pub trait FromValue: Sized {
-    type Output<'a>;
-
-    fn from_value(value: &NuValue) -> Result<Self::Output<'_>, ShellError>;
-    fn syntax_shape() -> SyntaxShape;
-}
-
-impl FromValue for &'_ str {
-    type Output<'a> = &'a str;
-
-    fn from_value(value: &NuValue) -> Result<Self::Output<'_>, ShellError> {
-        value.as_str()
-    }
-
-    fn syntax_shape() -> SyntaxShape {
-        SyntaxShape::String
     }
 }

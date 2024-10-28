@@ -1,5 +1,6 @@
 use nu_plugin::{EngineInterface, EvaluatedCall, PluginCommand, SimplePluginCommand};
-use nu_protocol::{LabeledError, ShellError, Signature, Span, SyntaxShape};
+use nu_plugin_helpers::{ArgSignature, FromValues};
+use nu_protocol::{LabeledError, ShellError, Signature, Span};
 
 use crate::NuValue;
 
@@ -16,41 +17,6 @@ pub fn simple_error(msg: impl Into<String>) -> ShellError {
     LabeledError::new(msg).into()
 }
 
-pub struct ArgSignature {
-    pub name: &'static str,
-    pub description: &'static str,
-    pub syntax_shape: SyntaxShape,
-}
-
-impl ArgSignature {
-    pub fn new(name: &'static str, description: &'static str, syntax_shape: SyntaxShape) -> Self {
-        Self {
-            name,
-            description,
-            syntax_shape,
-        }
-    }
-}
-
-pub trait FromValues {
-    type Output<'a>;
-
-    fn from_values(positional: &[NuValue]) -> Result<Self::Output<'_>, ShellError>;
-    fn arg_signatures() -> Vec<ArgSignature>;
-}
-
-impl FromValues for () {
-    type Output<'a> = ();
-
-    fn from_values(_positional: &[NuValue]) -> Result<Self::Output<'_>, ShellError> {
-        Ok(())
-    }
-
-    fn arg_signatures() -> Vec<ArgSignature> {
-        vec![]
-    }
-}
-
 type RunFn = Box<
     dyn Fn(&crate::Plugin, &EngineInterface, &EvaluatedCall) -> Result<NuValue, ShellError>
         + Send
@@ -62,7 +28,6 @@ pub struct Command {
     description: &'static str,
     arg_signatures: Vec<ArgSignature>,
     run_fn: RunFn,
-    // https://doc.rust-lang.org/nomicon/phantom-data.html#table-of-phantomdata-patterns
 }
 
 impl Command {

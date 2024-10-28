@@ -1,0 +1,14 @@
+[package]
+name = "nu_plugin_helpers_derive"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+darling = "0.20.10"
+itertools = "0.13.0"
+proc-macro2 = "1.0.89"
+quote = "1.0.37"
+syn = "2.0.85"

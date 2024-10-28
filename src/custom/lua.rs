@@ -1,8 +1,9 @@
+use nu_plugin_helpers::FromValue;
 use nu_protocol::{ShellError, Span, SyntaxShape};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::extensions::{FromValue, NuValueExt};
+use crate::extensions::NuValueExt;
 use crate::NuValue;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
