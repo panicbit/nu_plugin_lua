@@ -1045,6 +1045,7 @@ dependencies = [
 name = "nu_plugin_helpers"
 version = "0.1.0"
 dependencies = [
+ "nu-plugin",
  "nu-protocol",
  "nu_plugin_helpers_derive",
 ]

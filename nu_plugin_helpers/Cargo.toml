@@ -4,5 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+nu-plugin.workspace = true
 nu-protocol.workspace = true
 nu_plugin_helpers_derive = { path = "../nu_plugin_helpers_derive" }

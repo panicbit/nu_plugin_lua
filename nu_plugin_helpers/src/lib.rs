@@ -5,3 +5,6 @@ pub use from_value::FromValue;
 
 mod from_values;
 pub use from_values::{ArgSignature, FromValues};
+
+mod command;
+pub use command::{BoxedCommand, Command};
